@@ -1,0 +1,26 @@
+.app-container{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+
+
+.main-layout{
+    display:flex;
+    flex:1;
+    overflow:hidden;
+}
+
+
+app-sidebar{
+    width:220px;
+    background:#111827;
+}
+
+
+.content{
+    flex:1;
+    padding:20px;
+    background:#f3f4f6;
+    overflow-y:auto;
+}

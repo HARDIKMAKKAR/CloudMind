@@ -1,0 +1,25 @@
+form{
+display:flex;
+flex-direction:column;
+width:400px;
+gap:10px;
+background:white;
+padding:20px;
+border-radius:8px;
+}
+
+input,select{
+padding:8px;
+border:1px solid #ccc;
+border-radius:4px;
+}
+
+button{
+margin-top:10px;
+padding:10px;
+background:#16a34a;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}

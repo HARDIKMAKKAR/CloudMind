@@ -1,0 +1,8 @@
+<input [(ngModel)]="service.name" placeholder="Service Name">
+
+<select [(ngModel)]="service.region">
+<option>ap-south-1</option>
+<option>us-east-1</option>
+</select>
+
+<button (click)="deploy()">Deploy</button>

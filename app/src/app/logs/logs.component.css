@@ -1,0 +1,9 @@
+.log-box{
+background:black;
+color:#00ff9c;
+padding:20px;
+border-radius:6px;
+font-family:monospace;
+height:300px;
+overflow-y:auto;
+}

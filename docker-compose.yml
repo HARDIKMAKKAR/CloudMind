@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend:/app  
+      - ./backend/projects:/app/projects
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "3000:3000"
+    depends_on:
+      - ml-service
+    environment:
+      - ML_SERVICE_URL=http://ml-service:5000
+
+  ml-service:
+    build: ./ml-service
+    ports:
+      - "5000:5000"
