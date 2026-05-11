@@ -4,17 +4,32 @@ services:
   backend:
     build: ./backend
     volumes:
-      - ./backend:/app  
+      - ./backend:/app 
+      - /app/node_modules 
       - ./backend/projects:/app/projects
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "3000:3000"
     depends_on:
       - ml-service
+    command: npm run dev
     environment:
       - ML_SERVICE_URL=http://ml-service:5000
+      - CHOKIDAR_USEPOLLING=true
 
   ml-service:
     build: ./ml-service
     ports:
       - "5000:5000"
+    volumes:
+      - ./ml-service:/app
+  
+  mongodb:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

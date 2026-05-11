@@ -3,12 +3,22 @@ const cors = require('cors');
 const axios = require('axios');
 const { exec } = require("child_process");
 
+
+const Service = require("./models/Service");
+
+const Log = require("./models/Log");
+
+
 const simpleGit = require("simple-git");
 const fs = require("fs");
 const path = require("path");
 
 const git = simpleGit();
+const crypto = require("crypto");
 
+global.crypto = crypto;
+
+const mongoose = require("mongoose");
 const Docker = require("dockerode");
 
 const docker = new Docker({
@@ -20,6 +30,14 @@ const docker = new Docker({
 // const port = await getPort({ port: getPort.makeRange(3001, 4000) });
 const app = express();
 
+mongoose.connect("mongodb://mongodb:27017/cloudmind")
+  .then(() => {
+    console.log("MongoDB connected");
+  })
+  .catch(err => {
+    console.log(err);
+  });
+
 app.use(cors());
 app.use(express.json());
 
@@ -27,123 +45,352 @@ app.use(express.json());
    LOCAL STORAGE (REPLACES AWS)
 ----------------------------- */
 
-let services = [];
-
+// let services = [];
+// let deploymentLogs = {};
 /* -----------------------------
    GET ALL SERVICES
 ----------------------------- */
 
-app.get('/services', (req, res) => {
-  res.json(services);
+// app.get('/services', (req, res) => {
+//   res.json(services);
+// });
+app.get('/services', async (req, res) => {
+  try {
+    const services =
+      await Service.find().sort({
+        createdAt: -1
+      });
+    res.json(services);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
 });
 
 
+app.get("/test-db", async (req, res) => {
+
+  const service = await Service.create({
+    serviceId: "test123",
+    name: "test-service",
+    repoUrl: "github.com/test",
+    port: 3001,
+    status: "running",
+    replicas: 1
+  });
+
+  res.json(service);
+
+});
+
+// app.get("/logs/:projectName", (req, res) => {
+
+//   const { projectName } = req.params;
+
+//   res.json(
+//     deploymentLogs[projectName] || []
+//   );
+
+// });
+
+app.get(
+  "/logs/:projectName",
+  async (req, res) => {
+
+    try {
+
+      const logs =
+        await Log.find({
+          projectName:
+            req.params.projectName
+        }).sort({
+          timestamp: -1
+        });
+
+      res.json(logs);
+
+    } catch (err) {
+
+      res.status(500).json({
+        error: err.message
+      });
+
+    }
+
+  }
+);
+
+
+app.get("/monitor/:serviceId", async (req, res) => {
+
+  try {
+
+    const { serviceId } = req.params;
+
+    const service = await Service.findOne({
+  serviceId
+});
+
+    if (!service) {
+      return res.status(404).json({
+        error: "Service not found"
+      });
+    }
+
+    const status =
+      await getContainerStatus(serviceId);
+    service.status = status.status;
+    const metrics =
+      await getContainerMetrics(serviceId);
+
+    res.json({
+      service: service.name,
+      status,
+      metrics
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
 /* -----------------------------
    DEPLOY SERVICE
 ----------------------------- */
 app.post("/deploy", async (req, res) => {
+
   let { repoUrl, projectName } = req.body;
 
   if (!repoUrl || !projectName) {
-    return res.status(400).json({ error: "Missing repoUrl or projectName" });
-  }
 
-  // ❌ Block invalid GitHub URLs
-  if (repoUrl.includes("/tree/")) {
     return res.status(400).json({
-      error: "Invalid GitHub URL. Use root repo link."
+      error: "Missing repoUrl or projectName"
     });
+
   }
 
-  // ✅ Auto-fix .git
+  // Block invalid GitHub URLs
+  if (repoUrl.includes("/tree/")) {
+
+    return res.status(400).json({
+      error:
+        "Invalid GitHub URL. Use root repo link."
+    });
+
+  }
+
+  // Auto-add .git
   if (!repoUrl.endsWith(".git")) {
     repoUrl += ".git";
   }
 
-  // 🔥 REMOVE OLD ENTRY
-  services = services.filter(s => s.name !== projectName);
-
-  // 🔥 ADD NEW
-  services.push({
-    serviceId: null,
-    name: projectName,
-    repoUrl,
-    port: null,
-    status: "deploying",
-    replicas: 1
-  });
-
+  // Instant response
   res.json({
     message: "Deployment started 🚀",
     projectName
   });
 
+  // Background deployment
   deployProject(repoUrl, projectName);
+
 });
 
+async function addLog(
+  projectName,
+  message,
+  level = "info"
+) {
+  await Log.create({
+    projectName,
+    message,
+    level
+  });
 
+}
 
 async function deployProject(repoUrl, projectName) {
   try {
-    const projectPath = path.join(__dirname, "projects", projectName);
-
+    const projectPath =
+      path.join(__dirname, "projects", projectName);
+    // Remove old project for redeploy
     if (fs.existsSync(projectPath)) {
-      fs.rmSync(projectPath, { recursive: true, force: true });
+      fs.rmSync(
+        projectPath,
+        {
+          recursive: true,
+          force: true
+        }
+      );
     }
-
-    console.log("Cloning repo...");
-
-    if (!repoUrl.endsWith(".git")) {
-  repoUrl = repoUrl + ".git";
-}
-
+    // Validate repo URL
     if (repoUrl.includes("/tree/")) {
-  throw new Error("Invalid repo URL. Use root GitHub repo link.");
-}
+      throw new Error(
+        "Invalid repo URL. Use root GitHub repo link."
+      );
 
-
-    await cloneRepo(repoUrl, projectPath);
-
-    const type = detectProjectType(projectPath);
-
-    generateDockerfile(projectPath, type);
-
-    console.log("Building image...");
-    await buildImage(projectPath, projectName);
-
-    // const getPort = (await import("get-port")).default;
-    // const port = await getPort({
-    //   port: getPort.makeRange(3001, 4000)
-    // });
-
-
-    const getPort = (await import("get-port")).default;
-
-const port = await getPort();
-
-    console.log("Starting container...");
-    const containerId = await runContainer(projectName, projectName, port, type);
-
-    // ✅ UPDATE EXISTING SERVICE
-    const service = services.find(s => s.name === projectName);
-
-    if (service) {
-      service.serviceId = containerId;
-      service.port = port;
-      service.status = "running";
     }
+    // Auto-add .git
+    if (!repoUrl.endsWith(".git")) {
+      repoUrl += ".git";
+    }
+    /* ----------------------------
+       CLONE REPOSITORY
+    ----------------------------- */
+    console.log("Cloning repo...");
+    await addLog(
+      projectName,
+      "Cloning repository..."
+    );
+    await cloneRepo(
+      repoUrl,
+      projectPath
+    );
+    await addLog(
+      projectName,
+      "Repository cloned successfully"
+    );
+    /* -----------------------------
+       DETECT PROJECT TYPE
+    ----------------------------- */
+    const type =
+      detectProjectType(projectPath);
+    await addLog(
+      projectName,
+      `Detected project type: ${type}`
+    );
+    /* -----------------------------
+       GENERATE DOCKERFILE
+    ----------------------------- */
+    generateDockerfile(
+      projectPath,
+      type
+    );
+    await addLog(
+      projectName,
+      "Dockerfile generated"
+    );
+    /* -----------------------------
+       BUILD IMAGE
+    ---------------------------- */
+    console.log("Building image...");
+    await addLog(
+      projectName,
+      "Building Docker image..."
+    );
+    await buildImage(
+      projectPath,
+      projectName
+    );
+    await addLog(
+      projectName,
+      "Docker image built successfully"
+    );
+    /* -----------------------------
+       GET AVAILABLE PORT
+    ---------------------------- */
+    const getPort =
+      (await import("get-port")).default;
+    const port = await getPort();
+    await addLog(
+      projectName,
+      `Allocated port: ${port}`
+    );
+    /* -----------------------------
+       START CONTAINER
+    ----------------------------- */
+    console.log("Starting container...");
+    await addLog(
+      projectName,
+      "Starting container..."
+    );
 
-    console.log("✅ Deployment completed:", projectName);
+    await removeOldContainer(projectName);
 
+    const containerId =
+      await runContainer(
+        projectName,
+        projectName,
+        port,
+        type
+      );
+    await addLog(
+      projectName,
+      "Container started successfully"
+    );
+    /* -----------------------------
+       SAVE SERVICE TO DATABASE
+    ----------------------------- */
+    await Service.deleteMany({
+  name: projectName
+});
+
+
+    await Service.create({
+      serviceId: containerId,
+      name: projectName,
+      repoUrl,
+      port,
+      status: "running",
+      replicas: 1
+    });
+    /* -----------------------------
+       SUCCESS
+    ----------------------------- */
+    console.log(
+      "✅ Deployment completed:",
+      projectName
+    );
+    await addLog(
+      projectName,
+      "Deployment completed successfully",
+      "success"
+    );
   } catch (err) {
-    console.error("❌ Deployment failed:", err);
+    console.error(
+      "❌ Deployment failed:",
+      err
+    );
+    /* -----------------------------
+       SAVE FAILURE LOG
+    ----------------------------- */
+    await addLog(
+      projectName,
+      `Deployment failed: ${err.message}`,
+      "error"
+    );
+    /* -----------------------------
+       UPDATE / CREATE FAILED SERVICE
+    ----------------------------- */
+    const existingService =
+      await Service.findOne({
+        name: projectName
+      });
+    if (existingService) {
+      existingService.status = "failed";
+      existingService.error =
+        err.message;
+      await existingService.save();
+    } else {
 
-    const service = services.find(s => s.name === projectName);
+      await Service.deleteMany({
+  name: projectName
+});
 
-if (service) {
-  service.status = "failed";
-  service.error = err.message;
-}
+      await Service.create({
+        serviceId: null,
+        name: projectName,
+        repoUrl,
+        port: null,
+        status: "failed",
+        replicas: 1,
+        error: err.message
+      });
+    }
   }
 }
 
@@ -183,6 +430,34 @@ function cloneRepo(repoUrl, projectPath) {
   });
 }
 
+async function removeOldContainer(containerName) {
+
+  try {
+
+    const oldContainer =
+      docker.getContainer(containerName);
+
+    await oldContainer.inspect();
+
+    console.log(
+      `Removing old container: ${containerName}`
+    );
+
+    await oldContainer.remove({
+      force: true
+    });
+
+  } catch (err) {
+
+    // Container doesn't exist → ignore
+    console.log(
+      "No old container found"
+    );
+
+  }
+
+}
+
 async function runContainer(imageName, containerName, port, type) {
   const containerPort = type === "python" ? "5000/tcp" : "3000/tcp";
 
@@ -202,6 +477,86 @@ async function runContainer(imageName, containerName, port, type) {
   await container.start();
   return container.id;
 }
+
+
+async function getContainerStatus(containerId) {
+
+  try {
+
+    const container = docker.getContainer(containerId);
+
+    const info = await container.inspect();
+
+    return {
+      running: info.State.Running,
+      status: info.State.Status,
+      startedAt: info.State.StartedAt
+    };
+
+  } catch (err) {
+
+    return {
+      running: false,
+      status: "not_found"
+    };
+
+  }
+
+}
+
+async function getContainerMetrics(containerId) {
+
+  try {
+
+    const container = docker.getContainer(containerId);
+
+    const stats = await container.stats({ stream: false });
+
+    // CPU calculation
+    const cpuDelta =
+      stats.cpu_stats.cpu_usage.total_usage -
+      stats.precpu_stats.cpu_usage.total_usage;
+
+    const systemDelta =
+      stats.cpu_stats.system_cpu_usage -
+      stats.precpu_stats.system_cpu_usage;
+
+    let cpuUsage = 0;
+
+if (systemDelta > 0 && cpuDelta > 0) {
+  cpuUsage =
+    (cpuDelta / systemDelta) *
+    stats.cpu_stats.online_cpus *
+    100;
+}
+    // Memory calculation
+    let memoryUsage = 0;
+
+if (
+  stats.memory_stats.limit > 0
+) {
+  memoryUsage =
+    (stats.memory_stats.usage /
+      stats.memory_stats.limit) *
+    100;
+}
+    return {
+      cpu: cpuUsage.toFixed(2),
+      memory: memoryUsage.toFixed(2)
+    };
+
+  } catch (err) {
+
+    return {
+      cpu: 0,
+      memory: 0
+    };
+
+  }
+
+}
+
+
 
 function detectProjectType(projectPath) {
   const fs = require("fs");
@@ -354,24 +709,31 @@ app.get('/intelligence/:serviceId', async (req, res) => {
    UPDATE SERVICE STATUS
 ----------------------------- */
 
-function updateServiceStatus(serviceId, status) {
+async function updateServiceStatus(
+  serviceId,
+  status
+) {
 
-  const service = services.find(s => s.serviceId === serviceId);
-
-  if (service) {
-    service.status = status;
-  }
+  await Service.findOneAndUpdate(
+    { serviceId },
+    { status }
+  );
 
 }
-
 
 /* -----------------------------
    APPLY SCALING
 ----------------------------- */
 
-function applyScaling(serviceId, action) {
+async function applyScaling(
+  serviceId,
+  action
+) {
 
-  const service = services.find(s => s.serviceId === serviceId);
+  const service =
+    await Service.findOne({
+      serviceId
+    });
 
   if (!service) return;
 
@@ -379,9 +741,14 @@ function applyScaling(serviceId, action) {
     service.replicas += 1;
   }
 
-  if (action === "scale_down" && service.replicas > 1) {
+  if (
+    action === "scale_down" &&
+    service.replicas > 1
+  ) {
     service.replicas -= 1;
   }
+
+  await service.save();
 
 }
 
