@@ -14,6 +14,16 @@ import { SettingsComponent } from './settings/settings.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 // import { RouterModule } from '@angular/router';
 import { HttpClient, HttpClientModule, provideHttpClient } from '@angular/common/http';
+import { LoginComponent } from './login/login.component';
+import { RegisterComponent } from './register/register.component';
+
+import {
+  withInterceptors
+} from '@angular/common/http';
+
+import { authInterceptor }
+from './interceptors/auth.interceptor';
+import { LandingComponent } from './landing/landing.component';
 
 @NgModule({
   declarations: [
@@ -23,6 +33,9 @@ import { HttpClient, HttpClientModule, provideHttpClient } from '@angular/common
     ServicesComponent,
     SettingsComponent,
     SidebarComponent,
+    LoginComponent,
+    RegisterComponent,
+    LandingComponent,
   ],
   imports: [
     BrowserModule,
@@ -30,7 +43,15 @@ import { HttpClient, HttpClientModule, provideHttpClient } from '@angular/common
     FormsModule,
     ReactiveFormsModule,
   ],
-  providers: [provideHttpClient()],
+ providers: [
+
+  provideHttpClient(
+    withInterceptors([
+      authInterceptor
+    ])
+  )
+
+],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

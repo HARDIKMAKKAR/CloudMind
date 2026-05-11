@@ -1,0 +1,35 @@
+<div class="auth-container">
+
+  <div class="auth-card">
+
+    <h1>CloudMind</h1>
+
+    <p class="subtitle">
+      AI Powered Deployment Platform
+    </p>
+
+    <input
+      type="email"
+      placeholder="Email"
+      [(ngModel)]="email"
+    />
+
+    <input
+      type="password"
+      placeholder="Password"
+      [(ngModel)]="password"
+    />
+
+    <button (click)="login()">
+
+      {{ loading ? 'Loading...' : 'Login' }}
+
+    </button>
+
+    <p class="error" *ngIf="error">
+      {{ error }}
+    </p>
+
+  </div>
+
+</div>

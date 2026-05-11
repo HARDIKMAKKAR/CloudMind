@@ -1,0 +1,37 @@
+<div class="auth-container">
+
+  <div class="auth-card">
+
+    <h1>Create Account</h1>
+
+    <input
+      type="text"
+      placeholder="Name"
+      [(ngModel)]="name"
+    />
+
+    <input
+      type="email"
+      placeholder="Email"
+      [(ngModel)]="email"
+    />
+
+    <input
+      type="password"
+      placeholder="Password"
+      [(ngModel)]="password"
+    />
+
+    <button (click)="register()">
+
+      {{ loading ? 'Loading...' : 'Register' }}
+
+    </button>
+
+    <p class="error" *ngIf="error">
+      {{ error }}
+    </p>
+
+  </div>
+
+</div>

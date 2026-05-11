@@ -1,0 +1,56 @@
+.landing {
+  min-height: 100vh;
+  background: #0f172a;
+  color: white;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 50px;
+  align-items: center;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-buttons a {
+  color: white;
+  text-decoration: none;
+}
+
+.hero {
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 60px;
+  width: 70%;
+}
+
+.hero p {
+  color: #94a3b8;
+  font-size: 20px;
+}
+
+.start-btn {
+  background: #2563eb;
+  padding: 14px 28px;
+  border-radius: 10px;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}

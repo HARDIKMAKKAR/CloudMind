@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 import { ApiService } from '../services/api.service';
 
@@ -12,7 +12,7 @@ export class DashboardComponent implements OnInit {
 
   services: any[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService , private router : Router) {}
 
   ngOnInit(): void {
     this.loadServices();
@@ -47,4 +47,12 @@ export class DashboardComponent implements OnInit {
       this.loadServices();
     });
   }
+
+  logout() {
+
+  localStorage.clear();
+
+  this.router.navigate(['/login']);
+
+}
 }
