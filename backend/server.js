@@ -145,6 +145,243 @@ app.get(
 );
 
 
+app.post(
+  "/stop/:serviceId",
+  async (req, res) => {
+    try {
+      const { serviceId } =
+        req.params;
+      /* -----------------------------
+         FIND SERVICE
+      ----------------------------- */
+      const service =
+        await Service.findOne({
+          serviceId
+        });
+      if (!service) {
+        return res.status(404).json({
+          error: "Service not found"
+        });
+      }
+      /* -----------------------------
+         STOP CONTAINER
+      ----------------------------- */
+      const container =
+        docker.getContainer(serviceId);
+      await container.stop();
+      /* -----------------------------
+         UPDATE DATABASE
+      ----------------------------- */
+      service.status = "stopped";
+      await service.save();
+      /* -----------------------------
+         SAVE LOG
+      ----------------------------- */
+      await addLog(
+        service.name,
+        "Container stopped successfully",
+        "info"
+      );
+      /* -----------------------------
+         RESPONSE
+      ----------------------------- */
+      res.json({
+        message:
+          "Service stopped successfully"
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+
+app.post(
+  "/restart/:serviceId",
+  async (req, res) => {
+    try {
+      const { serviceId } =
+        req.params;
+      /* -----------------------------
+         FIND SERVICE
+      ----------------------------- */
+      const service =
+        await Service.findOne({
+          serviceId
+        });
+      if (!service) {
+        return res.status(404).json({
+          error: "Service not found"
+        });
+      }
+      /* -----------------------------
+         RESTART CONTAINER
+      ----------------------------- */
+      const container =
+        docker.getContainer(serviceId);
+      await container.restart();
+      /* -----------------------------
+         UPDATE STATUS
+      ----------------------------- */
+      service.status = "running";
+      await service.save();
+      /* -----------------------------
+         SAVE LOG
+      ----------------------------- */
+      await addLog(
+        service.name,
+        "Container restarted successfully",
+        "info"
+      );
+      /* -----------------------------
+         RESPONSE
+      ---------------------------- */
+      res.json({
+        message:
+          "Service restarted successfully"
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+
+app.delete(
+  "/service/:serviceId",
+  async (req, res) => {
+    try {
+      const { serviceId } =
+        req.params;
+      /* -----------------------------
+         FIND SERVICE
+      ----------------------------- */
+      const service =
+        await Service.findOne({
+          serviceId
+        });
+      if (!service) {
+        return res.status(404).json({
+          error: "Service not found"
+        });
+      }
+      /* -----------------------------
+         REMOVE CONTAINER
+      ----------------------------- */
+      try {
+        const container =
+          docker.getContainer(serviceId);
+        await container.remove({
+          force: true
+        });
+      } catch (err) {
+        console.log(
+          "Container already removed"
+        );
+      }
+      /* -----------------------------
+         REMOVE PROJECT FILES
+      ----------------------------- */
+      const projectPath =
+        path.join(
+          __dirname,
+          "projects",
+          service.name
+        );
+      if (
+        fs.existsSync(projectPath)
+      ) {
+        fs.rmSync(
+          projectPath,
+          {
+            recursive: true,
+            force: true
+          }
+        );
+      }
+      /* -----------------------------
+         REMOVE DATABASE RECORDS
+      ----------------------------- */
+      await Service.deleteOne({
+        serviceId
+      });
+      await Log.deleteMany({
+        projectName:
+          service.name
+      });
+      await Metric.deleteMany({
+        serviceId
+      });
+      /* -----------------------------
+         RESPONSE
+      ----------------------------- */
+      res.json({
+        message:
+          "Service deleted successfully"
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+
+
+app.get(
+  "/container-logs/:serviceId",
+  async (req, res) => {
+    try {
+      const { serviceId } =
+        req.params;
+      /* -----------------------------
+         FIND SERVICE
+      ----------------------------- */
+      const service =
+        await Service.findOne({
+          serviceId
+        });
+      if (!service) {
+        return res.status(404).json({
+          error: "Service not found"
+        });
+      }
+      /* -----------------------------
+         GET CONTAINER
+      ----------------------------- */
+      const container =
+        docker.getContainer(serviceId);
+      /* -----------------------------
+         FETCH LOGS
+      ----------------------------- */
+      const logs =
+        await container.logs({
+          stdout: true,
+          stderr: true,
+          tail: 100
+        });
+      /* -----------------------------
+         RESPONSE
+      ----------------------------- */
+      res.json({
+        service: service.name,
+        logs: logs.toString()
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+
+
 
 app.get("/monitor/:serviceId", async (req, res) => {
   try {
