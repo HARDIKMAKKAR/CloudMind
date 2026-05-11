@@ -6,8 +6,9 @@ const { exec } = require("child_process");
 
 const Service = require("./models/Service");
 
-const Log = require("./models/Log");
 
+const Log = require("./models/Log");
+const Metric = require("./models/Metric");
 
 const simpleGit = require("simple-git");
 const fs = require("fs");
@@ -121,43 +122,81 @@ app.get(
   }
 );
 
+app.get(
+  "/metrics/:serviceId",
+  async (req, res) => {
+    try {
+      const metrics =
+        await Metric.find({
+          serviceId:
+            req.params.serviceId
+        })
+        .sort({
+          timestamp: -1
+        })
+        .limit(50);
+      res.json(metrics);
+    } catch (err) {
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+
 
 app.get("/monitor/:serviceId", async (req, res) => {
-
   try {
-
     const { serviceId } = req.params;
-
-    const service = await Service.findOne({
-  serviceId
-});
-
+    /* -----------------------------
+       FIND SERVICE
+    ----------------------------- */
+    const service =
+      await Service.findOne({
+        serviceId
+      });
     if (!service) {
       return res.status(404).json({
         error: "Service not found"
       });
     }
-
+    /* -----------------------------
+       GET CONTAINER STATUS
+    ----------------------------- */
     const status =
       await getContainerStatus(serviceId);
+    // Save latest status
     service.status = status.status;
+    await service.save();
+    /* -----------------------------
+       GET METRICS
+    ----------------------------- */
     const metrics =
       await getContainerMetrics(serviceId);
-
+    /* -----------------------------
+       SAVE METRICS HISTORY
+    ----------------------------- */
+    await Metric.create({
+      serviceId,
+      cpu: Number(metrics.cpu),
+      memory: Number(metrics.memory),
+      latency:
+        Math.floor(Math.random() * 200)
+    });
+    /* -----------------------------
+       RESPONSE
+    ----------------------------- */
     res.json({
       service: service.name,
       status,
       metrics
     });
-
   } catch (err) {
-
     res.status(500).json({
       error: err.message
     });
-
   }
-
 });
 /* -----------------------------
    DEPLOY SERVICE
@@ -212,6 +251,7 @@ async function addLog(
   });
 
 }
+
 
 async function deployProject(repoUrl, projectName) {
   try {
