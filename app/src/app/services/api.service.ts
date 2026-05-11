@@ -12,10 +12,54 @@ export class ApiService {
   constructor(private http: HttpClient) {}
 
   getServices() {
-    return this.http.get(`${this.baseUrl}/services`);
+    return this.http.get<any[]>(`${this.baseUrl}/services`);
   }
 
-  deployService(data:any) {
+  deploy(data: any) {
     return this.http.post(`${this.baseUrl}/deploy`, data);
+  }
+
+  getLogs(projectName: string) {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/logs/${projectName}`
+    );
+  }
+
+  getContainerLogs(serviceId: string) {
+    return this.http.get<any>(
+      `${this.baseUrl}/container-logs/${serviceId}`
+    );
+  }
+
+  getMonitor(serviceId: string) {
+    return this.http.get<any>(
+      `${this.baseUrl}/monitor/${serviceId}`
+    );
+  }
+
+  getMetrics(serviceId: string) {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/metrics/${serviceId}`
+    );
+  }
+
+  stopService(serviceId: string) {
+    return this.http.post(
+      `${this.baseUrl}/stop/${serviceId}`,
+      {}
+    );
+  }
+
+  restartService(serviceId: string) {
+    return this.http.post(
+      `${this.baseUrl}/restart/${serviceId}`,
+      {}
+    );
+  }
+
+  deleteService(serviceId: string) {
+    return this.http.delete(
+      `${this.baseUrl}/service/${serviceId}`
+    );
   }
 }

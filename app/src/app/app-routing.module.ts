@@ -2,8 +2,8 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ServicesComponent } from './services/services.component';
-import { DeployServiceComponent } from './deploy-service/deploy-service.component';
-import { MonitoringComponent } from './monitoring/monitoring.component';
+import { DeployComponent } from './deploy-service/deploy-service.component';
+import { MonitorComponent } from './monitoring/monitoring.component';
 import { LogsComponent } from './logs/logs.component';
 import { SettingsComponent } from './settings/settings.component';
 
@@ -14,9 +14,9 @@ const routes: Routes = [
 
   { path: 'services', component: ServicesComponent },
 
-  { path: 'deploy', component: DeployServiceComponent },
+  { path: 'deploy', component: DeployComponent },
 
-  { path: 'monitoring', component: MonitoringComponent },
+  { path: 'monitoring', component: MonitorComponent },
 
   { path: 'logs', component: LogsComponent },
 

@@ -3,9 +3,17 @@ const cors = require('cors');
 const axios = require('axios');
 const { exec } = require("child_process");
 
+const jwt = require("jsonwebtoken");
+
+const bcrypt = require("bcryptjs");
+
+const User = require("./models/User");
+
+const JWT_SECRET = "cloudmind_secret_key";
 
 const Service = require("./models/Service");
 
+const auth = require("./middleware/auth");
 
 const Log = require("./models/Log");
 const Metric = require("./models/Metric");
@@ -55,10 +63,190 @@ app.use(express.json());
 // app.get('/services', (req, res) => {
 //   res.json(services);
 // });
-app.get('/services', async (req, res) => {
+
+
+app.post(
+  "/auth/register",
+  async (req, res) => {
+    try {
+      const {
+        name,
+        email,
+        password
+      } = req.body;
+      /* -----------------------------
+         VALIDATION
+      ----------------------------- */
+      if (
+        !name ||
+        !email ||
+        !password
+      ) {
+        return res.status(400).json({
+          error:
+            "All fields required"
+        });
+      }
+      /* -----------------------------
+         CHECK EXISTING USER
+      ----------------------------- */
+      const existingUser =
+        await User.findOne({
+          email
+        });
+      if (existingUser) {
+        return res.status(400).json({
+          error:
+            "User already exists"
+        });
+      }
+      /* -----------------------------
+         HASH PASSWORD
+      ----------------------------- */
+      const hashedPassword =
+        await bcrypt.hash(
+          password,
+          10
+        );
+      /* -----------------------------
+         CREATE USER
+      ----------------------------- */
+      const user =
+        await User.create({
+          name,
+          email,
+          password:
+            hashedPassword
+        });
+      /* -----------------------------
+         GENERATE TOKEN
+      ----------------------------- */
+      const token =
+        jwt.sign(
+          {
+            id: user._id
+          },
+          JWT_SECRET,
+          {
+            expiresIn: "7d"
+          }
+        );
+      /* -----------------------------
+         RESPONSE
+      ----------------------------- */
+      res.json({
+        message:
+          "User registered successfully",
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email
+        }
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+
+
+app.post(
+  "/auth/login",
+  async (req, res) => {
+    try {
+      const {
+        email,
+        password
+      } = req.body;
+      /* -----------------------------
+         VALIDATION
+      ----------------------------- */
+      if (
+        !email ||
+        !password
+      ) {
+        return res.status(400).json({
+          error:
+            "Email and password required"
+        });
+      }
+      /* -----------------------------
+         FIND USER
+      ----------------------------- */
+      const user =
+        await User.findOne({
+          email
+        });
+      if (!user) {
+        return res.status(400).json({
+          error:
+            "Invalid credentials"
+        });
+      }
+      /* -----------------------------
+         CHECK PASSWORD
+      ----------------------------- */
+      const isMatch =
+        await bcrypt.compare(
+          password,
+          user.password
+        );
+      if (!isMatch) {
+        return res.status(400).json({
+          error:
+            "Invalid credentials"
+        });
+      }
+      /* -----------------------------
+         GENERATE JWT
+      ----------------------------- */
+      const token =
+        jwt.sign(
+          {
+            id: user._id
+          },
+          JWT_SECRET,
+          {
+            expiresIn: "7d"
+          }
+        );
+     /* -----------------------------
+         RESPONSE
+     ----------------------------- */
+      res.json({
+        message:
+          "Login successful",
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email
+        }
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+
+
+
+
+
+
+app.get('/services', auth ,async (req, res) => {
   try {
     const services =
-      await Service.find().sort({
+      await Service.find({
+  user: req.user._id
+}).sort({
         createdAt: -1
       });
     res.json(services);
@@ -96,10 +284,22 @@ app.get("/test-db", async (req, res) => {
 // });
 
 app.get(
-  "/logs/:projectName",
+  "/logs/:projectName",auth,
   async (req, res) => {
 
     try {
+
+      const service =
+  await Service.findOne({
+    name: req.params.projectName,
+    user: req.user._id
+  });
+
+if (!service) {
+  return res.status(404).json({
+    error: "Access denied"
+  });
+}
 
       const logs =
         await Log.find({
@@ -123,9 +323,22 @@ app.get(
 );
 
 app.get(
-  "/metrics/:serviceId",
+  "/metrics/:serviceId",auth,
   async (req, res) => {
     try {
+
+      const service =
+  await Service.findOne({
+    serviceId: req.params.serviceId,
+    user: req.user._id
+  });
+
+if (!service) {
+  return res.status(404).json({
+    error: "Access denied"
+  });
+}
+
       const metrics =
         await Metric.find({
           serviceId:
@@ -146,7 +359,7 @@ app.get(
 
 
 app.post(
-  "/stop/:serviceId",
+  "/stop/:serviceId",auth,
   async (req, res) => {
     try {
       const { serviceId } =
@@ -156,8 +369,9 @@ app.post(
       ----------------------------- */
       const service =
         await Service.findOne({
-          serviceId
-        });
+  serviceId,
+  user: req.user._id
+});
       if (!service) {
         return res.status(404).json({
           error: "Service not found"
@@ -199,7 +413,7 @@ app.post(
 
 
 app.post(
-  "/restart/:serviceId",
+  "/restart/:serviceId",auth,
   async (req, res) => {
     try {
       const { serviceId } =
@@ -209,8 +423,9 @@ app.post(
       ----------------------------- */
       const service =
         await Service.findOne({
-          serviceId
-        });
+  serviceId,
+  user: req.user._id
+});
       if (!service) {
         return res.status(404).json({
           error: "Service not found"
@@ -252,7 +467,7 @@ app.post(
 
 
 app.delete(
-  "/service/:serviceId",
+  "/service/:serviceId",auth,
   async (req, res) => {
     try {
       const { serviceId } =
@@ -262,8 +477,9 @@ app.delete(
       ----------------------------- */
       const service =
         await Service.findOne({
-          serviceId
-        });
+  serviceId,
+  user: req.user._id
+});
       if (!service) {
         return res.status(404).json({
           error: "Service not found"
@@ -334,7 +550,7 @@ app.delete(
 
 
 app.get(
-  "/container-logs/:serviceId",
+  "/container-logs/:serviceId",auth,
   async (req, res) => {
     try {
       const { serviceId } =
@@ -344,8 +560,9 @@ app.get(
       ----------------------------- */
       const service =
         await Service.findOne({
-          serviceId
-        });
+  serviceId,
+  user: req.user._id
+});
       if (!service) {
         return res.status(404).json({
           error: "Service not found"
@@ -383,7 +600,7 @@ app.get(
 
 
 
-app.get("/monitor/:serviceId", async (req, res) => {
+app.get("/monitor/:serviceId", auth,async (req, res) => {
   try {
     const { serviceId } = req.params;
     /* -----------------------------
@@ -391,8 +608,9 @@ app.get("/monitor/:serviceId", async (req, res) => {
     ----------------------------- */
     const service =
       await Service.findOne({
-        serviceId
-      });
+  serviceId,
+  user: req.user._id
+});
     if (!service) {
       return res.status(404).json({
         error: "Service not found"
@@ -438,7 +656,7 @@ app.get("/monitor/:serviceId", async (req, res) => {
 /* -----------------------------
    DEPLOY SERVICE
 ----------------------------- */
-app.post("/deploy", async (req, res) => {
+app.post("/deploy",auth, async (req, res) => {
 
   let { repoUrl, projectName } = req.body;
 
@@ -472,7 +690,7 @@ app.post("/deploy", async (req, res) => {
   });
 
   // Background deployment
-  deployProject(repoUrl, projectName);
+  deployProject(repoUrl, projectName,req.user._id);
 
 });
 
@@ -490,7 +708,7 @@ async function addLog(
 }
 
 
-async function deployProject(repoUrl, projectName) {
+async function deployProject(repoUrl, projectName,userId) {
   try {
     const projectPath =
       path.join(__dirname, "projects", projectName);
@@ -608,6 +826,7 @@ async function deployProject(repoUrl, projectName) {
 
 
     await Service.create({
+      user: userId,
       serviceId: containerId,
       name: projectName,
       repoUrl,
@@ -659,6 +878,7 @@ async function deployProject(repoUrl, projectName) {
 });
 
       await Service.create({
+        user: userId,
         serviceId: null,
         name: projectName,
         repoUrl,
@@ -943,7 +1163,7 @@ function getPythonStartCommand(projectPath) {
    CLOUDMIND INTELLIGENCE
 ----------------------------- */
 
-app.get('/intelligence/:serviceId', async (req, res) => {
+app.get('/intelligence/:serviceId', auth,async (req, res) => {
 
   const serviceId = req.params.serviceId;
 
@@ -988,12 +1208,17 @@ app.get('/intelligence/:serviceId', async (req, res) => {
 
 async function updateServiceStatus(
   serviceId,
+  userId,
   status
 ) {
 
-  await Service.findOneAndUpdate(
-    { serviceId },
-    { status }
+  return await Service.findOneAndUpdate(
+    {
+      serviceId,
+      user: userId
+    },
+    { status },
+    { new: true }
   );
 
 }

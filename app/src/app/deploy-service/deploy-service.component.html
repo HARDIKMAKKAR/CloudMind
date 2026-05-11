@@ -1,8 +1,30 @@
-<input [(ngModel)]="service.name" placeholder="Service Name">
+<div class="max-w-xl mx-auto bg-slate-800 p-8 rounded-2xl shadow-lg">
 
-<select [(ngModel)]="service.region">
-<option>ap-south-1</option>
-<option>us-east-1</option>
-</select>
+  <h1 class="text-3xl font-bold mb-6">
+    Deploy New Service
+  </h1>
 
-<button (click)="deploy()">Deploy</button>
+  <input
+    [(ngModel)]="repoUrl"
+    placeholder="GitHub Repo URL"
+    class="w-full p-3 rounded-lg bg-slate-700 mb-4"
+  />
+
+  <input
+    [(ngModel)]="projectName"
+    placeholder="Project Name"
+    class="w-full p-3 rounded-lg bg-slate-700 mb-6"
+  />
+
+  <button
+    (click)="deploy()"
+    class="bg-cyan-600 px-6 py-3 rounded-lg w-full"
+  >
+    Deploy
+  </button>
+
+  <p class="mt-6 text-green-400">
+    {{ message }}
+  </p>
+
+</div>

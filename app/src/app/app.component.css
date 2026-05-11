@@ -1,26 +1,79 @@
-.app-container{
-    height:100vh;
-    display:flex;
-    flex-direction:column;
+/* app.component.css */
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg,
+    #0f172a 0%,
+    #111827 35%,
+    #1e293b 100%
+  );
+  color: #e2e8f0;
+  font-family: "Inter", sans-serif;
 }
 
+/* Main content wrapper */
+.p-6 {
+  padding: 2rem;
+  min-height: calc(100vh - 72px);
 
-.main-layout{
-    display:flex;
-    flex:1;
-    overflow:hidden;
+  /* smooth content spacing */
+  transition: all 0.3s ease;
 }
 
+/* Optional glass overlay feel */
+.p-6::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
 
-app-sidebar{
-    width:220px;
-    background:#111827;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.12), transparent 30%);
 }
 
+/* Router content animation */
+router-outlet + * {
+  display: block;
+  animation: fadeIn 0.35s ease;
+}
 
-.content{
-    flex:1;
-    padding:20px;
-    background:#f3f4f6;
-    overflow-y:auto;
+/* Smooth page transition */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #3b82f6,
+    #8b5cf6
+  );
+  border-radius: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .p-6 {
+    padding: 1rem;
+  }
 }

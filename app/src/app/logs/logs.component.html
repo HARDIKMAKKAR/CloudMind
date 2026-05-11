@@ -1,14 +1,14 @@
-<div class="logs">
+<h1 class="text-3xl font-bold mb-6">
+  Deployment Logs
+</h1>
 
-<h2>System Logs</h2>
+<div class="bg-black text-green-400 p-6 rounded-2xl font-mono h-[600px] overflow-y-auto">
 
-<div class="log-box">
+  <div *ngFor="let log of logs" class="mb-3">
 
-<p>[INFO] Service Auth API started</p>
-<p>[WARNING] High memory usage detected</p>
-<p>[ERROR] Database connection failed</p>
-<p>[INFO] Deployment completed</p>
+    [{{ log.timestamp | date:'medium' }}]
+    {{ log.message }}
 
-</div>
+  </div>
 
 </div>

@@ -1,24 +1,134 @@
-<div class="monitoring">
+<div
+  *ngIf="monitor"
+  class="max-w-4xl mx-auto"
+>
 
-<h2>Monitoring</h2>
+  <!-- HEADER -->
 
-<div class="metrics">
+  <div class="mb-8">
 
-<div class="metric-card">
-<h3>CPU Usage</h3>
-<p>40%</p>
+    <h1 class="text-4xl font-bold mb-2">
+      {{ monitor.service }}
+    </h1>
+
+    <p class="text-slate-400">
+      Real-time container monitoring
+    </p>
+
+  </div>
+
+  <!-- STATUS CARDS -->
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+    <!-- STATUS -->
+
+    <div
+      class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg"
+    >
+
+      <h2 class="text-lg text-slate-400 mb-4">
+        Status
+      </h2>
+
+      <div
+        class="inline-block px-4 py-2 rounded-full font-semibold"
+        [ngClass]="{
+          'bg-green-600': monitor.status.status === 'running',
+          'bg-red-600': monitor.status.status === 'exited',
+          'bg-yellow-600': monitor.status.status === 'stopped'
+        }"
+      >
+        {{ monitor.status.status }}
+      </div>
+
+    </div>
+
+    <!-- CPU -->
+
+    <div
+      class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg"
+    >
+
+      <h2 class="text-lg text-slate-400 mb-4">
+        CPU Usage
+      </h2>
+
+      <p class="text-4xl font-bold text-cyan-400">
+        {{ monitor.metrics.cpu }}%
+      </p>
+
+    </div>
+
+    <!-- MEMORY -->
+
+    <div
+      class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg"
+    >
+
+      <h2 class="text-lg text-slate-400 mb-4">
+        Memory Usage
+      </h2>
+
+      <p class="text-4xl font-bold text-pink-400">
+        {{ monitor.metrics.memory }}%
+      </p>
+
+    </div>
+
+  </div>
+
+  <!-- DETAILS -->
+
+  <div
+    class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg"
+  >
+
+    <h2 class="text-2xl font-bold mb-6">
+      Container Details
+    </h2>
+
+    <div class="space-y-4 text-lg">
+
+      <div class="flex justify-between">
+
+        <span class="text-slate-400">
+          Running
+        </span>
+
+        <span>
+          {{ monitor.status.running }}
+        </span>
+
+      </div>
+
+      <div class="flex justify-between">
+
+        <span class="text-slate-400">
+          Started At
+        </span>
+
+        <span>
+          {{ monitor.status.startedAt | date:'medium' }}
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
 </div>
 
-<div class="metric-card">
-<h3>Memory Usage</h3>
-<p>65%</p>
-</div>
+<!-- LOADING -->
 
-<div class="metric-card">
-<h3>Network Traffic</h3>
-<p>120 Mbps</p>
-</div>
+<div
+  *ngIf="!monitor"
+  class="flex justify-center items-center h-[400px]"
+>
 
-</div>
+  <div class="text-2xl animate-pulse">
+    Loading monitor data...
+  </div>
 
 </div>
