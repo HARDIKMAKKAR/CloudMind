@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-landing',
+  styleUrl : './landing.component.css',
   templateUrl: './landing.component.html'
 })
 
