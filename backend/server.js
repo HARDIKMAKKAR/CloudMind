@@ -306,7 +306,7 @@ if (!service) {
           projectName:
             req.params.projectName
         }).sort({
-          timestamp: -1
+          timestamp: 1
         });
 
       res.json(logs);
@@ -708,12 +708,245 @@ async function addLog(
 }
 
 
-async function deployProject(repoUrl, projectName,userId) {
+// async function deployProject(repoUrl, projectName,userId) {
+//   try {
+//     const projectPath =
+//       path.join(__dirname, "projects", projectName);
+//     // Remove old project for redeploy
+//     if (fs.existsSync(projectPath)) {
+//       fs.rmSync(
+//         projectPath,
+//         {
+//           recursive: true,
+//           force: true
+//         }
+//       );
+//     }
+//     // Validate repo URL
+//     if (repoUrl.includes("/tree/")) {
+//       throw new Error(
+//         "Invalid repo URL. Use root GitHub repo link."
+//       );
+
+//     }
+//     // Auto-add .git
+//     if (!repoUrl.endsWith(".git")) {
+//       repoUrl += ".git";
+//     }
+//     /* ----------------------------
+//        CLONE REPOSITORY
+//     ----------------------------- */
+//     console.log("Cloning repo...");
+//     await addLog(
+//       projectName,
+//       "Cloning repository..."
+//     );
+//     await cloneRepo(
+//       repoUrl,
+//       projectPath
+//     );
+//     await addLog(
+//       projectName,
+//       "Repository cloned successfully"
+//     );
+//     /* -----------------------------
+//        DETECT PROJECT TYPE
+//     ----------------------------- */
+//     const type =
+//       detectProjectType(projectPath);
+//     await addLog(
+//       projectName,
+//       `Detected project type: ${type}`
+//     );
+//     /* -----------------------------
+//        GENERATE DOCKERFILE
+//     ----------------------------- */
+//     generateDockerfile(
+//       projectPath,
+//       type
+//     );
+//     await addLog(
+//       projectName,
+//       "Dockerfile generated"
+//     );
+//     /* -----------------------------
+//        BUILD IMAGE
+//     ---------------------------- */
+//     console.log("Building image...");
+//     await addLog(
+//       projectName,
+//       "Building Docker image..."
+//     );
+//     // await buildImage(
+//     //   projectPath,
+//     //   projectName
+//     // );
+//     await buildImage(
+//   projectPath,
+//   projectName,
+//   projectName
+// );
+//     await addLog(
+//       projectName,
+//       "Docker image built successfully"
+//     );
+//     /* -----------------------------
+//        GET AVAILABLE PORT
+//     ---------------------------- */
+//     const getPort =
+//       (await import("get-port")).default;
+//     const port = await getPort();
+//     await addLog(
+//       projectName,
+//       `Allocated port: ${port}`
+//     );
+//     /* -----------------------------
+//        START CONTAINER
+//     ----------------------------- */
+//     console.log("Starting container...");
+//     await addLog(
+//       projectName,
+//       "Starting container..."
+//     );
+
+//     await removeOldContainer(projectName);
+
+//     const containerId =
+//       await runContainer(
+//         projectName,
+//         projectName,
+//         port,
+//         type
+//       );
+//     await addLog(
+//       projectName,
+//       "Container started successfully"
+//     );
+//     /* -----------------------------
+//        SAVE SERVICE TO DATABASE
+//     ----------------------------- */
+//     await Service.deleteMany({
+//   name: projectName
+// });
+
+
+//     await Service.create({
+//       user: userId,
+//       serviceId: containerId,
+//       name: projectName,
+//       repoUrl,
+//       port,
+//       status: "running",
+//       replicas: 1
+//     });
+//     /* -----------------------------
+//        SUCCESS
+//     ----------------------------- */
+//     console.log(
+//       "✅ Deployment completed:",
+//       projectName
+//     );
+//     await addLog(
+//       projectName,
+//       "Deployment completed successfully",
+//       "success"
+//     );
+//   } catch (err) {
+//     console.error(
+//       "❌ Deployment failed:",
+//       err
+//     );
+//     /* -----------------------------
+//        SAVE FAILURE LOG
+//     ----------------------------- */
+//     await addLog(
+//       projectName,
+//       `Deployment failed: ${err.message}`,
+//       "error"
+//     );
+//     /* -----------------------------
+//        UPDATE / CREATE FAILED SERVICE
+//     ----------------------------- */
+//     const existingService =
+//       await Service.findOne({
+//         name: projectName
+//       });
+//     if (existingService) {
+//       existingService.status = "failed";
+//       existingService.error =
+//         err.message;
+//       await existingService.save();
+//     } else {
+
+//       await Service.deleteMany({
+//   name: projectName
+// });
+
+//       await Service.create({
+//         user: userId,
+//         serviceId: null,
+//         name: projectName,
+//         repoUrl,
+//         port: null,
+//         status: "failed",
+//         replicas: 1,
+//         error: err.message
+//       });
+//     }
+//   }
+// }
+
+async function deployProject(
+  repoUrl,
+  projectName,
+  userId
+) {
+
   try {
+
     const projectPath =
-      path.join(__dirname, "projects", projectName);
-    // Remove old project for redeploy
+      path.join(
+        __dirname,
+        "projects",
+        projectName
+      );
+
+    /* -----------------------------
+       CREATE INITIAL SERVICE
+    ----------------------------- */
+
+    await Service.deleteMany({
+
+      name: projectName,
+
+      user: userId
+
+    });
+
+    await Service.create({
+
+      user: userId,
+
+      serviceId: null,
+
+      name: projectName,
+
+      repoUrl,
+
+      port: null,
+
+      status: "deploying",
+
+      replicas: 1
+
+    });
+
+    /* -----------------------------
+       REMOVE OLD PROJECT
+    ----------------------------- */
+
     if (fs.existsSync(projectPath)) {
+
       fs.rmSync(
         projectPath,
         {
@@ -721,174 +954,255 @@ async function deployProject(repoUrl, projectName,userId) {
           force: true
         }
       );
+
     }
-    // Validate repo URL
+
+    /* -----------------------------
+       VALIDATE REPO URL
+    ----------------------------- */
+
     if (repoUrl.includes("/tree/")) {
+
       throw new Error(
         "Invalid repo URL. Use root GitHub repo link."
       );
 
     }
-    // Auto-add .git
+
+    /* -----------------------------
+       AUTO ADD .git
+    ----------------------------- */
+
     if (!repoUrl.endsWith(".git")) {
+
       repoUrl += ".git";
+
     }
-    /* ----------------------------
+
+    /* -----------------------------
        CLONE REPOSITORY
     ----------------------------- */
-    console.log("Cloning repo...");
+
+    console.log(
+      "Cloning repo..."
+    );
+
     await addLog(
       projectName,
       "Cloning repository..."
     );
+
     await cloneRepo(
       repoUrl,
       projectPath
     );
+
     await addLog(
       projectName,
       "Repository cloned successfully"
     );
+
     /* -----------------------------
        DETECT PROJECT TYPE
     ----------------------------- */
+
     const type =
-      detectProjectType(projectPath);
+      detectProjectType(
+        projectPath
+      );
+
     await addLog(
       projectName,
       `Detected project type: ${type}`
     );
+
     /* -----------------------------
        GENERATE DOCKERFILE
     ----------------------------- */
+
     generateDockerfile(
       projectPath,
       type
     );
+
     await addLog(
       projectName,
       "Dockerfile generated"
     );
+
     /* -----------------------------
        BUILD IMAGE
-    ---------------------------- */
-    console.log("Building image...");
+    ----------------------------- */
+
+    console.log(
+      "Building image..."
+    );
+
     await addLog(
       projectName,
       "Building Docker image..."
     );
+
     await buildImage(
       projectPath,
+      projectName,
       projectName
     );
+
     await addLog(
       projectName,
       "Docker image built successfully"
     );
+
     /* -----------------------------
        GET AVAILABLE PORT
-    ---------------------------- */
+    ----------------------------- */
+
     const getPort =
-      (await import("get-port")).default;
-    const port = await getPort();
+      (
+        await import("get-port")
+      ).default;
+
+    const port =
+      await getPort();
+
     await addLog(
       projectName,
       `Allocated port: ${port}`
     );
+
     /* -----------------------------
        START CONTAINER
     ----------------------------- */
-    console.log("Starting container...");
+
+    console.log(
+      "Starting container..."
+    );
+
     await addLog(
       projectName,
       "Starting container..."
     );
 
-    await removeOldContainer(projectName);
+    await removeOldContainer(
+      projectName
+    );
 
     const containerId =
       await runContainer(
+
         projectName,
+
         projectName,
+
         port,
+
         type
+
       );
+
     await addLog(
       projectName,
       "Container started successfully"
     );
+
     /* -----------------------------
-       SAVE SERVICE TO DATABASE
+       UPDATE SERVICE
     ----------------------------- */
-    await Service.deleteMany({
-  name: projectName
-});
 
+    await Service.findOneAndUpdate(
 
-    await Service.create({
-      user: userId,
-      serviceId: containerId,
-      name: projectName,
-      repoUrl,
-      port,
-      status: "running",
-      replicas: 1
-    });
+      {
+
+        name: projectName,
+
+        user: userId
+
+      },
+
+      {
+
+        serviceId:
+          containerId,
+
+        port,
+
+        status:
+          "running"
+
+      }
+
+    );
+
     /* -----------------------------
        SUCCESS
     ----------------------------- */
+
     console.log(
       "✅ Deployment completed:",
       projectName
     );
+
     await addLog(
+
       projectName,
+
       "Deployment completed successfully",
+
       "success"
+
     );
-  } catch (err) {
+
+  }
+
+  catch (err) {
+
     console.error(
       "❌ Deployment failed:",
       err
     );
+
     /* -----------------------------
        SAVE FAILURE LOG
     ----------------------------- */
+
     await addLog(
+
       projectName,
+
       `Deployment failed: ${err.message}`,
+
       "error"
+
     );
+
     /* -----------------------------
-       UPDATE / CREATE FAILED SERVICE
+       UPDATE FAILED SERVICE
     ----------------------------- */
+
     const existingService =
       await Service.findOne({
-        name: projectName
+
+        name: projectName,
+
+        user: userId
+
       });
+
     if (existingService) {
-      existingService.status = "failed";
+
+      existingService.status =
+        "failed";
+
       existingService.error =
         err.message;
+
       await existingService.save();
-    } else {
 
-      await Service.deleteMany({
-  name: projectName
-});
-
-      await Service.create({
-        user: userId,
-        serviceId: null,
-        name: projectName,
-        repoUrl,
-        port: null,
-        status: "failed",
-        replicas: 1,
-        error: err.message
-      });
     }
+
   }
+
 }
 
 /* -----------------------------
@@ -896,7 +1210,31 @@ async function deployProject(repoUrl, projectName,userId) {
 ----------------------------- */
 
 
-async function buildImage(projectPath, imageName) {
+// async function buildImage(projectPath, imageName) {
+//   return new Promise((resolve, reject) => {
+//     docker.buildImage(
+//       {
+//         context: projectPath,
+//         src: ["."]
+//       },
+//       { t: imageName },
+//       (err, stream) => {
+//         if (err) return reject(err);
+
+//         docker.modem.followProgress(stream, (err, res) => {
+//           if (err) reject(err);
+//           else resolve(res);
+//         });
+//       }
+//     );
+//   });
+// }
+
+async function buildImage(
+  projectPath,
+  imageName,
+  projectName
+) {
   return new Promise((resolve, reject) => {
     docker.buildImage(
       {
@@ -904,13 +1242,56 @@ async function buildImage(projectPath, imageName) {
         src: ["."]
       },
       { t: imageName },
-      (err, stream) => {
-        if (err) return reject(err);
-
-        docker.modem.followProgress(stream, (err, res) => {
-          if (err) reject(err);
-          else resolve(res);
-        });
+      async (err, stream) => {
+        if (err) {
+          return reject(err);
+        }
+        stream.on(
+          "data",
+          async (chunk) => {
+            const text =
+              chunk.toString();
+            try {
+              const lines =
+                text
+                  .split("\n")
+                  .filter(Boolean);
+              for (const line of lines) {
+                try {
+                  const parsed =
+                    JSON.parse(line);
+                  if (parsed.stream) {
+                    const log =
+                      parsed.stream.trim();
+                    console.log(log);
+                    await addLog(
+                      projectName,
+                      log
+                    );
+                  }
+                } catch {
+                  console.log(line);
+                  await addLog(
+                    projectName,
+                    line
+                  );
+                }
+              }
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        );
+        docker.modem.followProgress(
+          stream,
+          (err, res) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(res);
+            }
+          }
+        );
       }
     );
   });

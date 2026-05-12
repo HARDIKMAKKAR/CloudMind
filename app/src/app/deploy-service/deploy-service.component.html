@@ -81,26 +81,21 @@
         Live Deployment Logs
       </h2>
 
-      <div class="logs-container">
+     <div
+  #logsContainer
+  class="logs-container"
+>
 
-        <div
-          *ngFor="let log of logs"
-          class="log-item"
-        >
+  <div
+    *ngFor="let log of logs"
+    class="log-line"
+  >
 
-          <span class="log-time">
-            {{ log.timestamp | date:'mediumTime' }}
-          </span>
+    {{ log.message }}
 
-          <span class="log-message">
-            {{ log.message }}
-          </span>
+  </div>
 
-        </div>
-
-      </div>
-
-    </div>
+</div>
 
     <!-- SUCCESS BUTTON -->
 

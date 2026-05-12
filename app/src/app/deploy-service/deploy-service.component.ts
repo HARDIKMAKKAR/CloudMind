@@ -13,6 +13,8 @@ import { Router } from '@angular/router';
   templateUrl: './deploy-service.component.html'
 })
 
+
+
 export class DeployComponent {
 
   repoUrl = '';
@@ -59,47 +61,98 @@ export class DeployComponent {
 
   startPollingLogs() {
 
-    this.polling = setInterval(() => {
+  /* LOAD IMMEDIATELY */
 
-      this.api
-        .getLogs(this.projectName)
-        .subscribe((res: any) => {
+  this.loadLogs();
 
-          this.logs = res;
+  /* CONTINUOUS POLLING */
 
-          const completed =
-            this.logs.find(
-              (log: any) =>
-                log.message.includes(
-                  'Deployment completed successfully'
-                )
-            );
+  this.polling = setInterval(() => {
 
-          const failed =
-            this.logs.find(
-              (log: any) =>
-                log.message.includes(
-                  'Deployment failed'
-                )
-            );
+    this.loadLogs();
 
-          if (completed || failed) {
+  }, 2000);
 
-            this.deploymentCompleted = true;
-
-            clearInterval(this.polling);
-          }
-
-        });
-
-    }, 2000);
-
-  }
+}
 
   goToServices() {
 
-    this.router.navigate(['/services']);
+    this.router.navigate(['/dashboard']);
 
   }
+
+  loadLogs() {
+
+  this.api
+    .getLogs(this.projectName)
+
+    .subscribe({
+
+      next: (res: any) => {
+
+        this.logs = res;
+
+        /* AUTO SCROLL */
+
+        setTimeout(() => {
+
+          this.scrollPageToBottom();
+
+        }, 100);
+
+        /* CHECK STATUS */
+
+        const completed =
+          this.logs.find(
+
+            (log: any) =>
+
+              log.message.includes(
+                'Deployment completed successfully'
+              )
+
+          );
+
+        const failed =
+          this.logs.find(
+
+            (log: any) =>
+
+              log.message.includes(
+                'Deployment failed'
+              )
+
+          );
+
+        if (completed || failed) {
+
+          this.deploymentCompleted = true;
+
+          clearInterval(this.polling);
+
+        }
+
+      },
+
+      error: (err) => {
+
+        console.log(err);
+
+      }
+
+    });
+
+}
+scrollPageToBottom() {
+
+  window.scrollTo({
+
+    top: document.body.scrollHeight,
+
+    behavior: 'smooth'
+
+  });
+
+}
 
 }
