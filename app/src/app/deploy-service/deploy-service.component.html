@@ -1,5 +1,3 @@
-<!-- deploy.component.html -->
-
 <div class="deploy-page">
 
   <div class="deploy-card">
@@ -7,11 +5,15 @@
     <div class="deploy-header">
 
       <div>
-        <h1>Deploy Service</h1>
 
-        <p>
-          Deploy and manage your infrastructure workloads
+        <h1 class="deploy-title">
+          Deploy Service
+        </h1>
+
+        <p class="deploy-subtitle">
+          Deploy and monitor applications in real time
         </p>
+
       </div>
 
       <div class="environment-badge">
@@ -24,13 +26,14 @@
 
       <div class="input-group">
 
-        <label>
+        <label class="input-label">
           Git Repository
         </label>
 
         <input
           type="text"
           [(ngModel)]="repoUrl"
+          class="deploy-input"
           placeholder="https://github.com/user/project"
         />
 
@@ -38,19 +41,23 @@
 
       <div class="input-group">
 
-        <label>
+        <label class="input-label">
           Service Name
         </label>
 
         <input
           type="text"
           [(ngModel)]="projectName"
+          class="deploy-input"
           placeholder="auth-service"
         />
 
       </div>
 
-      <button (click)="deploy()">
+      <button
+        class="deploy-btn"
+        (click)="deploy()"
+      >
         Deploy Application
       </button>
 
@@ -60,6 +67,54 @@
       >
         {{ message }}
       </div>
+
+    </div>
+
+    <!-- LIVE LOGS -->
+
+    <div
+      *ngIf="logs.length > 0"
+      class="logs-section"
+    >
+
+      <h2>
+        Live Deployment Logs
+      </h2>
+
+      <div class="logs-container">
+
+        <div
+          *ngFor="let log of logs"
+          class="log-item"
+        >
+
+          <span class="log-time">
+            {{ log.timestamp | date:'mediumTime' }}
+          </span>
+
+          <span class="log-message">
+            {{ log.message }}
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- SUCCESS BUTTON -->
+
+    <div
+      *ngIf="deploymentCompleted"
+      class="services-btn-container"
+    >
+
+      <button
+        class="services-btn"
+        (click)="goToServices()"
+      >
+        Go To Services
+      </button>
 
     </div>
 

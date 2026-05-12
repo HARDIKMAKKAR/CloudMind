@@ -1,234 +1,125 @@
-/* deploy.component.css */
-
-/* ===== Page ===== */
+/* Full Page */
 
 .deploy-page {
-  width: 100%;
-  min-height: calc(100vh - 80px);
-
+  min-height: 100vh;
+  background: #0f172a;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-
-  padding: 60px 24px;
-
-  background:
-    #0f172a;
+  align-items: center;
+  padding: 40px;
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ===== Card ===== */
+/* Main Card */
 
 .deploy-card {
   width: 100%;
-  max-width: 720px;
-
-  background:
-    #111827;
-
-  border:
-    1px solid #1e293b;
-
-  border-radius: 18px;
-
-  padding: 32px;
-
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.35);
+  max-width: 700px;
+  background: #1e293b;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  border: 1px solid #334155;
 }
 
-/* ===== Header ===== */
+/* Header */
 
 .deploy-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-
-  margin-bottom: 36px;
+  align-items: center;
+  margin-bottom: 40px;
 }
 
-.deploy-header h1 {
-  margin: 0;
-
-  color: #f8fafc;
-
-  font-size: 30px;
+.deploy-title {
+  font-size: 34px;
   font-weight: 700;
-
-  letter-spacing: -0.8px;
+  margin: 0;
 }
 
-.deploy-header p {
-  margin-top: 8px;
-
+.deploy-subtitle {
+  margin-top: 10px;
   color: #94a3b8;
-
-  font-size: 14px;
-
-  line-height: 1.5;
+  font-size: 15px;
 }
 
-/* ===== Badge ===== */
+/* Badge */
 
 .environment-badge {
-  padding: 8px 14px;
-
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  padding: 10px 18px;
   border-radius: 999px;
-
-  background:
-    rgba(34, 197, 94, 0.12);
-
-  border:
-    1px solid rgba(34, 197, 94, 0.22);
-
-  color: #4ade80;
-
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
-/* ===== Form ===== */
+/* Form */
 
 .deploy-form {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-/* ===== Input Groups ===== */
+/* Inputs */
 
 .input-group {
-  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
-.input-group label {
-  display: block;
-
+.input-label {
   margin-bottom: 10px;
-
+  font-size: 15px;
   color: #cbd5e1;
-
-  font-size: 14px;
   font-weight: 600;
 }
 
-/* ===== Inputs ===== */
-
-.input-group input {
-  width: 100%;
-  height: 54px;
-
-  padding: 0 16px;
-
-  border:
-    1px solid #334155;
-
-  border-radius: 12px;
-
-  background:
-    #0f172a;
-
-  color: #f8fafc;
-
-  font-size: 15px;
-
-  box-sizing: border-box;
-
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.input-group input::placeholder {
-  color: #64748b;
-}
-
-.input-group input:focus {
-  outline: none;
-
-  border-color:
-    #06b6d4;
-
-  box-shadow:
-    0 0 0 3px rgba(6, 182, 212, 0.12);
-
-  background:
-    #111827;
-}
-
-/* ===== Button ===== */
-
-.deploy-form button {
-  width: 100%;
-  height: 54px;
-
-  margin-top: 10px;
-
-  border: none;
-
-  border-radius: 12px;
-
-  background:
-    #06b6d4;
-
+.deploy-input {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #475569;
+  background: #0f172a;
   color: white;
-
   font-size: 15px;
-  font-weight: 600;
+  outline: none;
+  transition: 0.3s;
+}
 
+.deploy-input:focus {
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 3px rgba(6,182,212,0.2);
+}
+
+/* Button */
+
+.deploy-btn {
+  margin-top: 10px;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #06b6d4, #2563eb);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
+  transition: 0.3s;
 }
 
-.deploy-form button:hover {
-  background:
-    #0891b2;
+.deploy-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.95;
 }
 
-.deploy-form button:active {
-  transform: scale(0.99);
-}
-
-/* ===== Message ===== */
+/* Success/Error Message */
 
 .deploy-message {
-  margin-top: 20px;
-
-  padding: 14px 16px;
-
+  margin-top: 10px;
+  padding: 14px;
   border-radius: 12px;
-
-  background:
-    rgba(34, 197, 94, 0.08);
-
-  border:
-    1px solid rgba(34, 197, 94, 0.18);
-
-  color: #4ade80;
-
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* ===== Responsive ===== */
-
-@media (max-width: 768px) {
-
-  .deploy-page {
-    padding: 30px 16px;
-  }
-
-  .deploy-card {
-    padding: 24px;
-  }
-
-  .deploy-header {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .deploy-header h1 {
-    font-size: 24px;
-  }
+  background: #0f766e;
+  color: white;
+  font-weight: 600;
+  text-align: center;
 }

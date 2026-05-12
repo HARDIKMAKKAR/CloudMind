@@ -77,10 +77,10 @@ const routes: Routes = [
   },
 
   {
-    path: 'logs',
-    component: LogsComponent,
-    canActivate: [authGuard]
-  },
+  path: 'logs/:projectName',
+  component: LogsComponent,
+  canActivate: [authGuard]
+},
 
   {
     path: 'settings',

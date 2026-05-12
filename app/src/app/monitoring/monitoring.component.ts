@@ -22,7 +22,7 @@ export class MonitorComponent implements OnInit {
   ngOnInit(): void {
 
     const serviceId =
-      this.route.snapshot.params['serviceId'];
+      this.route.snapshot.params['id'];
 
     this.loadMonitor(serviceId);
 
