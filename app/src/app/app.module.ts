@@ -16,7 +16,7 @@ import { SidebarComponent } from './sidebar/sidebar.component';
 import { HttpClient, HttpClientModule, provideHttpClient } from '@angular/common/http';
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
-
+// import { NgChartsModule } from 'ng2-charts';
 import {
   withInterceptors
 } from '@angular/common/http';
@@ -42,6 +42,7 @@ import { LandingComponent } from './landing/landing.component';
     AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,
+    // NgChartsModule
   ],
  providers: [
 

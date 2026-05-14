@@ -141,4 +141,11 @@ export class ApiService {
 
   }
 
+
+  getIntelligence(serviceId: string) {
+  return this.http.get<any>(
+    `${this.baseUrl}/intelligence/${serviceId}`
+  );
+}
+
 }
