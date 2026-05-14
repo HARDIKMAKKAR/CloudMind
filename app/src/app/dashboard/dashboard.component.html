@@ -30,13 +30,55 @@
 
     </div>
 
-    <p>
+   <p>
       Port: {{ service.port }}
+  </p>
+
+    <!-- <p>
+      Replicas: {{ service.replicas }}
+    </p>  -->
+
+
+    <p>
+  Replicas: {{ service.replicas }}
+</p>
+
+<div class="containers-section">
+
+  <h3>
+    Containers
+  </h3>
+
+  <div
+    *ngFor="
+      let container
+      of service.containers
+    "
+    class="container-card"
+  >
+
+    <p>
+      Port:
+      {{ container.port }}
     </p>
 
     <p>
-      Replicas: {{ service.replicas }}
+      Status:
+      {{ container.status }}
     </p>
+
+    <p class="container-id">
+
+      {{
+        container.containerId
+          ?.slice(0, 12)
+      }}
+
+    </p>
+
+  </div>
+
+</div>
 
     <div class="flex flex-wrap gap-2 mt-6">
 
